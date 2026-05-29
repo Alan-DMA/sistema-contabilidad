@@ -65,21 +65,90 @@ def registrar_asiento(fecha, descripcion_general, detalles): #Primera funcion: r
     finally:
         conexion.close() #Cierra la conexión a la base de datos
 
+def obtener_saldos_mayor():
+    """
+    Actúa como el controlador que procesa todo el Libro Diario, 
+    agrupa los movimientos por cuenta y calcula el saldo neto actual
+    según la naturaleza de la cuenta (Activo, Pasivo, etc.).
+    """
+    ruta_db = Path(__file__).parent / "contabilidad.db" #Crea una ruta absoluta y compatible con windows y linux
+    conexion = sqlite3.connect(ruta_db) #Se conecta a la base de datos local (archivo contabilidad.db) que se encuentra en el mismo directorio que este script
+    # Cambiamos el row_factory para poder acceder a las columnas por su nombre como un diccionario
+    conexion.row_factory = sqlite3.Row
+    cursor = conexion.cursor()
+    
+    # Consulta SQL que hace el "mapeo" es como una estructura de datos que agrupa toda la información relevante de las cuentas y sus movimientos en el Libro Diario
+    consulta = """
+        SELECT 
+            c.id,
+            c.codigo,
+            c.nombre,
+            c.tipo,
+            COALESCE(SUM(da.debe), 0.0) as total_debe, #esto es para evitar que si no hay movimientos en el debe o haber, se muestre como 0.0 en lugar de NULL
+            COALESCE(SUM(da.haber), 0.0) as total_haber
+        FROM cuentas c
+        LEFT JOIN detalle_asientos da ON c.id = da.cuenta_id
+        GROUP BY c.id;
+    """
+    
+    try:
+        cursor.execute(consulta) #esto se usa para realizar la consulta SQL y obtener los datos necesarios para calcular los saldos de cada cuenta en el Libro Mayor
+        filas = cursor.fetchall()
+        
+        cronica_mayor = []
+        
+        for fila in filas: #Usamos un ciclo para recorrer cada fila del resultado de la consulta y calcular el saldo neto de cada cuenta según su tipo (Activo, Pasivo, etc.) y la lógica contable de partida doble
+            t_debe = fila["total_debe"]
+            t_haber = fila["total_haber"]
+            tipo_cuenta = fila["tipo"]
+            
+            # Lógica matemática según la naturaleza de la cuenta (Arquitectura del saldo)
+            # Activos y Egresos aumentan por el Debe (Saldo Deudor)
+            # Pasivos, Capital e Ingresos aumentan por el Haber (Saldo Acreedor)
+            if tipo_cuenta in ['Activo', 'Egreso']:
+                saldo = t_debe - t_haber
+            else:
+                saldo = t_haber - t_debe
+                
+            cronica_mayor.append({
+                "codigo": fila["codigo"],
+                "nombre": fila["nombre"],
+                "tipo": tipo_cuenta,
+                "debe": t_debe,
+                "haber": t_haber,
+                "saldo": round(saldo, 2)
+            })
+            
+        return cronica_mayor
+        
+    except sqlite3.Error as e:
+        print(f"Error de lectura en el bus de datos (DB): {e}")
+        return []
+    finally:
+        conexion.close()
 # BLOQUE DE PRUEBA LOCAL: sirve para probar la función directamente desde la terminal
 if __name__ == "__main__":
-    print("--- Probando registro de un asiento CUADRADO ---")
-    # Ejemplo: Apertura de caja chica con dinero del banco por 500$
-    asiento_valido = [
-        {"cuenta_id": 1, "descripcion": "Ingreso a caja chica", "debe": 500.0, "haber": 0.0},  # Caja Chica (id 1)
-        {"cuenta_id": 2, "descripcion": "Salida de banco", "debe": 0.0, "haber": 500.0}       # Banco (id 2)
+    print("=== CONTROL DE LOGICA CONTABLE ===")
+    
+    # 1. Ejecutamos una lectura limpia del Libro Mayor antes de operar
+    print("\n[INFO] Consultando estado inicial de las cuentas:")
+    saldos = obtener_saldos_mayor()
+    for s in saldos:
+        print(f"Cuenta: {s['nombre']} ({s['tipo']}) | Saldo Actual: {s['saldo']}$")
+        
+    # 2. Insertamos un movimiento de prueba (Compra de mercancía en efectivo)
+    print("\n[INFO] Registrando nueva transacción (Compra de mercancía por 200$)...")
+    asiento_mercancia = [
+        {"cuenta_id": 3, "descripcion": "Entrada de inventario", "debe": 200.0, "haber": 0.0}, # Inventario (id 3)
+        {"cuenta_id": 1, "descripcion": "Pago en efectivo", "debe": 0.0, "haber": 200.0}      # Caja Chica (id 1)
     ]
-    exito, mensaje = registrar_asiento("2026-05-27", "Apertura de fondos de caja chica", asiento_valido)
+    exito, mensaje = registrar_asiento("2026-05-28", "Compra de inventario al contado", asiento_mercancia)
     print(mensaje)
-
-    print("\n--- Probando registro de un asiento DESCUADRADO ---")
-    asiento_invalido = [
-        {"cuenta_id": 1, "descripcion": "Error intencional", "debe": 300.0, "haber": 0.0},
-        {"cuenta_id": 2, "descripcion": "Error intencional", "debe": 0.0, "haber": 250.0}
-    ]
-    exito_2, mensaje_2 = registrar_asiento("2026-05-27", "Asiento de prueba erróneo", asiento_invalido)
-    print(mensaje_2)
+    
+    # 3. Volvemos a leer el Libro Mayor para verificar el impacto de los datos en tiempo real
+    print("\n[INFO] Consultando estado posterior de las cuentas recalculadas:")
+    saldos_actualizados = obtener_saldos_mayor()
+    for s in saldos_actualizados:
+        # Solo mostraremos las cuentas que sufrieron cambios para no saturar la pantalla
+        if s['debe'] > 0 or s['haber'] > 0:
+            print(f"Cuenta: {s['nombre']} | Total Debe: {s['debe']}$ | Total Haber: {s['haber']}$ | Saldo Neto: {s['saldo']}$")

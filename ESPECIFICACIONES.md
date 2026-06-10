@@ -125,4 +125,5 @@ Al dispararse el cierre del ejercicio, el backend realiza de forma atómica:
 
 1. Consulta y consolidación de saldos de todas las cuentas con tipo "Ingreso" o "Egreso".
 2. Determinación de la utilidad o pérdida del ejercicio por diferencia simple.
-3. Inyección automática de un asiento de cierre en el Libro Diario para cargar los Ingresos por su saldo, abonar los Egresos por su saldo (dejando ambas naturalezas en cero) y transferir la diferencia resultante sumándola o restándola directamente a la cuenta de **Capital Social**.
+3. Inyección automática de un asiento de cierre en el Libro Diario para cargar los Ingresos por su saldo, abonar los Egresos por su saldo (dejando ambas naturalezas en cero) y transferir la diferencia resultante a una cuenta transitoria llamada **Utilidad del Ejercicio** (si hay ganancia) o **Pérdida del Ejercicio** (si hay pérdida), manteniendo intacta la cuenta de Capital general.
+4. **Bloqueo del Período:** Una vez ejecutado, el sistema congelará todas las transacciones históricas, rechazando cualquier intento de ingresar un nuevo asiento con una fecha igual o anterior al cierre para evitar alteraciones en los saldos consolidados.

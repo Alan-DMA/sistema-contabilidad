@@ -7,6 +7,7 @@ Este documento establece las directrices tecnológicas, arquitectónicas y de de
 
 ### ARTÍCULO 1: STACK TECNOLÓGICO Y ENTORNO
 * **Lenguaje Base:** Python 3 (compatible con entornos windows,Linux Debian/Pop!_OS/ChromeOS Crostini).
+* **Codificación de Archivos:** Todos los archivos de código fuente Python (`.py`) deben guardarse obligatoriamente en formato `UTF-8` e incluir como primera línea la declaración explícita `# -*- coding: utf-8 -*-` para evitar "mojibake" en caracteres latinos.
 * **Librería Gráfica:** `customtkinter` (importada estrictamente como `import customtkinter as ctk`).
 * **Base de Datos:** SQLite 3 nativo mediante un único archivo local denominado `contabilidad.db` ubicado en el directorio raíz.
 * **Restricción de Red:** El sistema debe ser 100% autónomo y funcional en modo *offline*. Queda estrictamente prohibido el uso de librerías de terceros que requieran conexión a internet, servicios en la nube o API externas.
@@ -29,7 +30,7 @@ Este documento establece las directrices tecnológicas, arquitectónicas y de de
 * **Validación Preventiva:** Antes de ejecutar cualquier transacción en la base de datos, el backend debe validar matemáticamente los tipos de datos (evitar nulos, textos en campos numéricos o montos negativos).
 * **Semántica de Colores:** Los indicadores visuales de balance deben interactuar con el usuario. Si un asiento está descuadrado, el indicador debe tornarse rojo y el botón de guardado debe deshabilitarse. Al cuadrar, pasará a verde o azul y se habilitará la acción.
 * **Autoconfiguración Inicial:** Es obligatorio que el sistema inyecte un catálogo de cuentas base de forma automática al inicializar la base de datos.
-* **Cierre Contable:** El asiento automático de cierre debe afectar directamente sumando o restando el resultado a la cuenta "Capital Social", cuidando de no afectar la coherencia de reportes futuros.
+* **Cierre Contable:** El asiento automático de cierre debe aislar el resultado enviándolo a las cuentas "Utilidad del Ejercicio" o "Pérdida del Ejercicio" según corresponda, quedando terminantemente prohibido afectar de forma directa la cuenta de "Capital Social" general.
 
 ---
 

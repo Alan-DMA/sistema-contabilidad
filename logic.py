@@ -114,3 +114,125 @@ def ejecutar_cierre_contable(fecha_cierre):
         
     exito, msg = database.insertar_asiento(fecha_cierre, "ASIENTO DE CIERRE EJERCICIO", detalles_asiento)
     return exito, msg
+
+def reversar_asiento(asiento_id, fecha_reverso, descripcion_reverso):
+    """
+    Anula un asiento invirtiendo las cuentas (Haber por Debe y Debe por Haber).
+    """
+    valido, msg = validar_fecha_asiento(fecha_reverso)
+    if not valido:
+        return False, msg
+        
+    asiento = database.get_asiento(asiento_id)
+    if not asiento:
+        return False, "Asiento original no encontrado."
+        
+    detalles_reverso = []
+    for detalle in asiento["detalles"]:
+        cuenta_id, debe, haber = detalle
+        # Invertimos: el nuevo debe es el antiguo haber, el nuevo haber es el antiguo debe
+        detalles_reverso.append((cuenta_id, haber, debe))
+        
+    if not validar_equilibrio(detalles_reverso):
+        return False, "Error de cuadre en el asiento de reverso."
+        
+    exito, msg = database.insertar_asiento(fecha_reverso, descripcion_reverso, detalles_reverso)
+    return exito, msg
+
+def calcular_movimientos_mayor(cuenta_id):
+    cuentas = database.get_cuentas()
+    cuenta_obj = next((c for c in cuentas if c[0] == cuenta_id), None)
+    if not cuenta_obj: return []
+    
+    tipo = cuenta_obj[3]
+    es_deudora = tipo in ["Activo", "Egreso"]
+    
+    movimientos = database.get_movimientos_cuenta(cuenta_id)
+    resultado = []
+    saldo_acumulado = 0.0
+    
+    for mov in movimientos:
+        fecha, desc, debe, haber = mov
+        if es_deudora:
+            saldo_acumulado += (debe - haber)
+        else:
+            saldo_acumulado += (haber - debe)
+            
+        resultado.append({
+            "fecha": fecha,
+            "concepto": desc,
+            "debe": debe,
+            "haber": haber,
+            "saldo": saldo_acumulado
+        })
+    return resultado
+
+def calcular_hoja_trabajo():
+    saldos = database.get_saldos_cuentas()
+    filas = []
+    totales = {
+        "sum_d": 0, "sum_h": 0,
+        "sal_d": 0, "sal_h": 0,
+        "aju_d": 0, "aju_h": 0,
+        "aju_sal_d": 0, "aju_sal_h": 0,
+        "res_d": 0, "res_h": 0,
+        "bg_d": 0, "bg_h": 0
+    }
+    
+    for c in saldos:
+        _, codigo, nombre, tipo, debe_sum, haber_sum = c
+        debe_sum = debe_sum or 0
+        haber_sum = haber_sum or 0
+        
+        if debe_sum == 0 and haber_sum == 0:
+            continue
+            
+        sal_d, sal_h = 0, 0
+        if tipo in ["Activo", "Egreso"]:
+            sal_d = max(0, debe_sum - haber_sum)
+            sal_h = max(0, haber_sum - debe_sum)
+        else:
+            sal_h = max(0, haber_sum - debe_sum)
+            sal_d = max(0, debe_sum - haber_sum)
+            
+        # Sin ajustes por ahora
+        aju_d, aju_h = 0, 0
+        aju_sal_d, aju_sal_h = sal_d, sal_h
+        
+        res_d, res_h = 0, 0
+        bg_d, bg_h = 0, 0
+        
+        if tipo == "Egreso":
+            res_d = aju_sal_d
+        elif tipo == "Ingreso":
+            res_h = aju_sal_h
+        elif tipo == "Activo":
+            bg_d = aju_sal_d
+        elif tipo in ["Pasivo", "Capital"]:
+            bg_h = aju_sal_h
+            
+        filas.append({
+            "cuenta": f"{codigo} - {nombre}",
+            "sum_d": debe_sum, "sum_h": haber_sum,
+            "sal_d": sal_d, "sal_h": sal_h,
+            "aju_d": aju_d, "aju_h": aju_h,
+            "aju_sal_d": aju_sal_d, "aju_sal_h": aju_sal_h,
+            "res_d": res_d, "res_h": res_h,
+            "bg_d": bg_d, "bg_h": bg_h
+        })
+        
+        totales["sum_d"] += debe_sum
+        totales["sum_h"] += haber_sum
+        totales["sal_d"] += sal_d
+        totales["sal_h"] += sal_h
+        totales["aju_sal_d"] += aju_sal_d
+        totales["aju_sal_h"] += aju_sal_h
+        totales["res_d"] += res_d
+        totales["res_h"] += res_h
+        totales["bg_d"] += bg_d
+        totales["bg_h"] += bg_h
+
+    utilidad = totales["res_h"] - totales["res_d"]
+    totales["utilidad"] = utilidad
+    
+    return filas, totales

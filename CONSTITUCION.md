@@ -37,3 +37,8 @@ Este documento establece las directrices tecnológicas, arquitectónicas y de de
 ### ARTÍCULO 4: PROTOCOLO DE INTERACCIÓN CON EL AGENTE DE IA
 * **Lectura Obligatoria de Contexto:** Antes de generar código, el Agente debe validar el archivo `@ESPECIFICACIONES.md` para asimilar el alcance y la estructura visual.
 * **Prohibición de Código Incompleto:** El Agente no debe omitir lógica con comentarios como `# Aquí va tu código anterior`. Debe entregar los bloques funcionales estructurados o indicar con precisión dónde insertar la modificación.
+---
+
+### ARTÍCULO 5: EXPORTACIÓN Y REPORTES
+* **Exportación en PDF:** Todos los reportes contables (Diario, Mayor, Hoja de Trabajo, Resultados, Balance) deben poseer la capacidad de ser exportados a formato PDF.
+* **Librería de Exportación:** Se utilizará de manera estricta la librería `reportlab` para la generación programática de documentos PDF, manteniendo un diseño coherente con la identidad visual (Flat Design, fuente legible, encabezados claros).

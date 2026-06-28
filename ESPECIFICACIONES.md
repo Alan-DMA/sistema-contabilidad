@@ -15,11 +15,12 @@ La aplicación es un software contable puro de escritorio monolítico. Centraliz
 * **Módulos Incluidos (En Alcance - Sistema Contable Puro):**
     * **Login y Roles:** Acceso de seguridad básico discriminando entre Administrador y Operador.
     * **Nuevo Asiento (Registro):** Formulario dinámico para la captura de transacciones con validación matemática en tiempo real.
-    * **Reporte de Libro Diario:** Vista independiente de solo lectura para auditar el historial de asientos ordenados cronológicamente.
+    * **Libro Diario:** Vista independiente de solo lectura para auditar el historial de asientos ordenados cronológicamente.
     * **Libro Mayor:** Motor de consulta para agrupar movimientos y visualizar el historial de saldos por cuenta específica.
     * **Hoja de Trabajo (12 Columnas):** Matriz analítica para verificar comprobación, ajustes, saldos ajustados, resultados y situación financiera.
     * **Estados Financieros:** Reportes formales y jerárquicos (Estado de Resultados de pasos múltiples y Balance General).
     * **Cierre Contable:** Cancelación de cuentas nominales y bloqueo de periodo.
+    * **Exportación PDF:** Generación nativa (vía reportlab) de reportes en PDF de forma estandarizada para todos los libros y estados financieros.
 * **Componentes Excluidos (Corrupción de Alcance Rechazada):**
     * Módulos de ERP corporativo (Inventario, Facturación, Nómina, Compras).
     * Botones "fantasma" o módulos inactivos bajo la etiqueta "Próximamente".

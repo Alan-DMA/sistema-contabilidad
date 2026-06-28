@@ -97,7 +97,7 @@ class SistemaContableGUI(ctk.CTk):
         self.btn_nuevo = ctk.CTkButton(self.sidebar, text="Nuevo Asiento", command=lambda: self.mostrar_vista("Nuevo"), **btn_kwargs)
         self.btn_nuevo.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
         
-        self.btn_diario = ctk.CTkButton(self.sidebar, text="Reporte Diario", command=lambda: self.mostrar_vista("Diario"), **btn_kwargs)
+        self.btn_diario = ctk.CTkButton(self.sidebar, text="Libro Diario", command=lambda: self.mostrar_vista("Diario"), **btn_kwargs)
         self.btn_diario.grid(row=4, column=0, padx=10, pady=5, sticky="ew")
         
         self.btn_mayor = ctk.CTkButton(self.sidebar, text="Libro Mayor", command=lambda: self.mostrar_vista("Mayor"), **btn_kwargs)

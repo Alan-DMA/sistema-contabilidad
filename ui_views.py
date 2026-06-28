@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from datetime import datetime
 import database
 import logic
+import export_pdf
 
 class LoginView(ctk.CTkFrame):
     def __init__(self, master, on_login_success):
@@ -61,7 +62,9 @@ class LoginView(ctk.CTkFrame):
         pass_header.grid(row=2, column=0, sticky="ew")
         pass_header.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(pass_header, text="Contraseña", font=ctk.CTkFont(size=14), text_color="#374151").grid(row=0, column=0, sticky="w")
-        ctk.CTkLabel(pass_header, text="¿Olvidaste tu contraseña?", font=ctk.CTkFont(size=14), text_color="#3B82F6", cursor="hand2").grid(row=0, column=1, sticky="e")
+        btn_olvido = ctk.CTkLabel(pass_header, text="¿Olvidaste tu contraseña?", font=ctk.CTkFont(size=14), text_color="#3B82F6", cursor="hand2")
+        btn_olvido.grid(row=0, column=1, sticky="e")
+        btn_olvido.bind("<Button-1>", lambda e: messagebox.showinfo("Recuperar contraseña", "Por favor, comunícate con el administrador del sistema para restablecer tu contraseña."))
         
         self.entry_pass = ctk.CTkEntry(form, height=46, width=368, placeholder_text="••••••••", show="*", border_color="#D1D5DB", fg_color="#F9FAFB", text_color="#111827")
         self.entry_pass.grid(row=3, column=0, sticky="ew", pady=(5, 20))
@@ -278,7 +281,7 @@ class ReporteDiarioView(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
         
-        ctk.CTkLabel(self, text="Reporte de Libro Diario", font=ctk.CTkFont(size=26, weight="bold"), text_color="#111827").grid(row=0, column=0, pady=(0, 20), sticky="w")
+        ctk.CTkLabel(self, text="Libro Diario", font=ctk.CTkFont(size=26, weight="bold"), text_color="#111827").grid(row=0, column=0, pady=(0, 20), sticky="w")
         
         # Filtros
         filters = ctk.CTkFrame(self, fg_color="#FFFFFF", corner_radius=8)
@@ -305,8 +308,8 @@ class ReporteDiarioView(ctk.CTkFrame):
         # Botones Exportar Imprimir
         btn_f = ctk.CTkFrame(filters, fg_color="transparent")
         btn_f.pack(side="right", padx=20, pady=20)
-        ctk.CTkButton(btn_f, text="Exportar", fg_color="#FFFFFF", border_width=1, border_color="#D1D5DB", text_color="#374151", hover_color="#F3F4F6", width=100).pack(side="left", padx=10)
-        ctk.CTkButton(btn_f, text="Imprimir", fg_color="#10B981", hover_color="#059669", text_color="#FFFFFF", width=100).pack(side="left")
+        self.btn_export = ctk.CTkButton(btn_f, text="Exportar", fg_color="#10B981", border_width=1, border_color="#10B981", text_color="#FFFFFF", hover_color="#059669", width=100, command=self.exportar_pdf)
+        self.btn_export.pack(side="left", padx=10)
         
         # Tabla Principal
         self.card = ctk.CTkFrame(self, fg_color="#FFFFFF", corner_radius=8)
@@ -390,6 +393,25 @@ class ReporteDiarioView(ctk.CTkFrame):
         ctk.CTkLabel(f_foot, text=f"{tot_d:,.2f}", font=ctk.CTkFont(weight="bold"), text_color="#10B981", width=100, anchor="e").grid(row=0, column=1, padx=10)
         ctk.CTkLabel(f_foot, text=f"{tot_h:,.2f}", font=ctk.CTkFont(weight="bold"), text_color="#10B981", width=100, anchor="e").grid(row=0, column=2, padx=10)
 
+    def exportar_pdf(self):
+        filepath = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], title="Guardar Libro Diario", initialfile="Libro_Diario.pdf")
+        if not filepath: return
+        registros = database.get_libro_diario()
+        datos = []
+        for r in registros:
+            datos.append({
+                "fecha": r[1],
+                "asiento_id": f"#{r[0]:03d}",
+                "concepto": f"{r[3]} - {r[4]}",
+                "debe": f"{r[5]:,.2f}" if r[5] > 0 else "-",
+                "haber": f"{r[6]:,.2f}" if r[6] > 0 else "-"
+            })
+        try:
+            export_pdf.exportar_diario_pdf(filepath, datos)
+            messagebox.showinfo("Exportar", f"Libro Diario exportado con éxito a:\n{filepath}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo generar el PDF:\\n{e}")
+
 class MayorView(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
@@ -448,8 +470,8 @@ class MayorView(ctk.CTkFrame):
         mov_header.grid_columnconfigure(0, weight=1)
         
         ctk.CTkLabel(mov_header, text="Movimientos", font=ctk.CTkFont(size=18, weight="bold"), text_color="#111827").grid(row=0, column=0, sticky="w")
-        btn_export = ctk.CTkButton(mov_header, text="Exportar", font=ctk.CTkFont(size=13, weight="bold"), fg_color="transparent", text_color="#10B981", hover_color="#ECFDF5", width=80)
-        btn_export.grid(row=0, column=1, sticky="e")
+        self.btn_export = ctk.CTkButton(mov_header, text="Exportar", font=ctk.CTkFont(size=13, weight="bold"), fg_color="transparent", text_color="#10B981", hover_color="#ECFDF5", width=80, command=self.exportar_pdf)
+        self.btn_export.grid(row=0, column=1, sticky="e")
         
         # Tabla Headers
         th = ctk.CTkFrame(self.mov_card, fg_color="#F9FAFB", height=40, corner_radius=0)
@@ -494,6 +516,7 @@ class MayorView(ctk.CTkFrame):
         if not cuenta_obj: return
         
         cuenta_id = cuenta_obj[0]
+        self.cuenta_actual_id = cuenta_id
         self.lbl_cuenta_nombre.configure(text=cuenta_obj[2])
         self.lbl_cuenta_codigo.configure(text=f"Código: {cuenta_obj[1]} | {cuenta_obj[3]}")
         
@@ -543,6 +566,35 @@ class MayorView(ctk.CTkFrame):
         self.lbl_saldo_actual.configure(text=f"$ {saldo_final:,.2f}", text_color=color_saldo)
 
 
+        self.lbl_total_saldo.configure(text=f"{saldo_final:,.2f}")
+        
+    def exportar_pdf(self):
+        if not hasattr(self, 'cuenta_actual_id') or not self.cuenta_actual_id:
+            messagebox.showwarning("Aviso", "No hay ninguna cuenta seleccionada.")
+            return
+            
+        filepath = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], title="Guardar Libro Mayor", initialfile="Libro_Mayor.pdf")
+        if not filepath: return
+        
+        movimientos = logic.calcular_movimientos_mayor(self.cuenta_actual_id)
+        datos = []
+        for mov in movimientos:
+            datos.append({
+                "fecha": mov["fecha"].split()[0] if " " in mov["fecha"] else mov["fecha"],
+                "concepto": mov["concepto"],
+                "debe": f"{mov['debe']:,.2f}" if mov['debe'] > 0 else "-",
+                "haber": f"{mov['haber']:,.2f}" if mov['haber'] > 0 else "-",
+                "saldo": f"{mov['saldo']:,.2f}"
+            })
+            
+        cuenta_nombre = self.lbl_cuenta_nombre.cget("text")
+        
+        try:
+            export_pdf.exportar_mayor_pdf(filepath, cuenta_nombre, datos)
+            messagebox.showinfo("Exportar", f"Libro Mayor exportado con éxito a:\n{filepath}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo generar el PDF:\n{e}")
+
 class BalanceComprobacionView(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
@@ -560,7 +612,7 @@ class BalanceComprobacionView(ctk.CTkFrame):
         ctk.CTkLabel(titulo_frame, text="Hoja de Trabajo (Working Papers)", font=ctk.CTkFont(family="Inter", size=26, weight="bold"), text_color="#111827").pack(anchor="w")
         ctk.CTkLabel(titulo_frame, text="Matriz Analítica de 12 Columnas", font=ctk.CTkFont(size=15), text_color="#6B7280").pack(anchor="w")
         
-        btn_export = ctk.CTkButton(header_frame, text="Exportar", font=ctk.CTkFont(size=13, weight="bold"), fg_color="transparent", text_color="#10B981", hover_color="#ECFDF5", width=80, border_width=1, border_color="#D1D5DB")
+        btn_export = ctk.CTkButton(header_frame, text="Exportar", font=ctk.CTkFont(size=13, weight="bold"), fg_color="transparent", text_color="#10B981", hover_color="#ECFDF5", width=80, border_width=1, border_color="#D1D5DB", command=self.exportar_pdf)
         btn_export.grid(row=0, column=1, sticky="e")
         
         # Tabla Card
@@ -573,12 +625,10 @@ class BalanceComprobacionView(ctk.CTkFrame):
         th = ctk.CTkFrame(self.table_card, fg_color="#F9FAFB", corner_radius=0)
         th.grid(row=0, column=0, sticky="ew", padx=(0, 16))
         
-        th.grid_columnconfigure(0, weight=0, minsize=180)
-        for i in range(1, 13):
-            th.grid_columnconfigure(i, weight=1)
+        th.grid_columnconfigure(0, weight=1)
         
         # Row 1 (Grupos)
-        ctk.CTkLabel(th, text="Cuenta Contable", font=ctk.CTkFont(size=12, weight="bold"), text_color="#374151", width=180, anchor="w").grid(row=0, column=0, sticky="ew", padx=(20, 10), pady=(10, 5))
+        ctk.CTkLabel(th, text="Cuenta Contable", font=ctk.CTkFont(size=12, weight="bold"), text_color="#374151", anchor="w").grid(row=0, column=0, sticky="ew", padx=(20, 10), pady=(10, 5))
         ctk.CTkLabel(th, text="Sumas", font=ctk.CTkFont(size=12, weight="bold"), text_color="#374151").grid(row=0, column=1, columnspan=2, sticky="ew", pady=(10, 5))
         ctk.CTkLabel(th, text="Saldos", font=ctk.CTkFont(size=12, weight="bold"), text_color="#374151").grid(row=0, column=3, columnspan=2, sticky="ew", pady=(10, 5))
         ctk.CTkLabel(th, text="Ajustes", font=ctk.CTkFont(size=12, weight="bold"), text_color="#374151").grid(row=0, column=5, columnspan=2, sticky="ew", pady=(10, 5))
@@ -587,7 +637,7 @@ class BalanceComprobacionView(ctk.CTkFrame):
         ctk.CTkLabel(th, text="Balance G.", font=ctk.CTkFont(size=12, weight="bold"), text_color="#374151").grid(row=0, column=11, columnspan=2, sticky="ew", padx=(0, 20), pady=(10, 5))
         
         # Row 2 (Debe/Haber)
-        col_w = 80
+        col_w = 85
         ctk.CTkLabel(th, text="", height=1).grid(row=1, column=0)
         
         sub_headers = [
@@ -600,9 +650,9 @@ class BalanceComprobacionView(ctk.CTkFrame):
             ctk.CTkLabel(th, text=h, font=ctk.CTkFont(size=11), text_color="#6B7280", width=col_w, anchor="e").grid(row=1, column=col_idx+1, sticky="ew", padx=5, pady=(0, 10))
             col_idx += 2
             
-        # Separadores Header
-        for c in [0, 2, 4, 6, 8, 10]:
-            ctk.CTkFrame(th, fg_color="#D1D5DB", width=1).grid(row=0, column=c, rowspan=2, sticky="nse")
+        # Separadores Header (entre Debe y Haber)
+        for c in [1, 3, 5, 7, 9, 11]:
+            ctk.CTkFrame(th, fg_color="#D1D5DB", width=1, height=1).grid(row=0, column=c, rowspan=2, sticky="nse")
             
         self.scroll_mov = ctk.CTkScrollableFrame(self.table_card, fg_color="transparent")
         
@@ -613,15 +663,13 @@ class BalanceComprobacionView(ctk.CTkFrame):
         self.footer = ctk.CTkFrame(self.table_card, fg_color="#F9FAFB", height=50, corner_radius=0, border_width=1, border_color="#E5E7EB")
         self.footer.grid(row=2, column=0, sticky="ew", padx=(0, 16))
         
-        self.footer.grid_columnconfigure(0, weight=0, minsize=180)
-        for i in range(1, 13):
-            self.footer.grid_columnconfigure(i, weight=1)
+        self.footer.grid_columnconfigure(0, weight=1)
         
-        ctk.CTkLabel(self.footer, text="SUMAS IGUALES", font=ctk.CTkFont(size=12, weight="bold"), text_color="#111827", width=180, anchor="e").grid(row=0, column=0, sticky="ew", padx=(20, 10), pady=15)
+        ctk.CTkLabel(self.footer, text="SUMAS IGUALES", font=ctk.CTkFont(size=12, weight="bold"), text_color="#111827", anchor="e").grid(row=0, column=0, sticky="ew", padx=(20, 10), pady=15)
         
-        # Separadores Footer
-        for c in [0, 2, 4, 6, 8, 10]:
-            ctk.CTkFrame(self.footer, fg_color="#D1D5DB", width=1).grid(row=0, column=c, sticky="nse")
+        # Separadores Footer (entre Debe y Haber)
+        for c in [1, 3, 5, 7, 9, 11]:
+            ctk.CTkFrame(self.footer, fg_color="#D1D5DB", width=1, height=1).grid(row=0, column=c, sticky="nse")
             
         self.lbls_totales = []
         col_idx = 1
@@ -637,22 +685,20 @@ class BalanceComprobacionView(ctk.CTkFrame):
         filas, totales = logic.calcular_hoja_trabajo()
         
         row_idx = 0
-        col_w = 80
+        col_w = 85
         
         for i, fila in enumerate(filas):
             bg_color = "#F9FAFB" if i % 2 == 0 else "#FFFFFF"
-            f = ctk.CTkFrame(self.scroll_mov, fg_color=bg_color, corner_radius=0, height=35)
+            f = ctk.CTkFrame(self.scroll_mov, fg_color=bg_color, corner_radius=0, height=24)
             f.grid(row=row_idx, column=0, sticky="ew")
             
-            f.grid_columnconfigure(0, weight=0, minsize=180)
-            for j in range(1, 13):
-                f.grid_columnconfigure(j, weight=1)
+            f.grid_columnconfigure(0, weight=1)
             
-            ctk.CTkLabel(f, text=fila["cuenta"], font=ctk.CTkFont(size=12), text_color="#111827", width=180, anchor="w").grid(row=0, column=0, sticky="ew", padx=(20, 10), pady=5)
+            ctk.CTkLabel(f, text=fila["cuenta"], font=ctk.CTkFont(size=11), text_color="#111827", anchor="w").grid(row=0, column=0, sticky="ew", padx=(20, 10), pady=2)
             
-            # Separadores Data
-            for c in [0, 2, 4, 6, 8, 10]:
-                ctk.CTkFrame(f, fg_color="#E5E7EB", width=1).grid(row=0, column=c, sticky="nse")
+            # Separadores Data (entre Debe y Haber)
+            for c in [1, 3, 5, 7, 9, 11]:
+                ctk.CTkFrame(f, fg_color="#E5E7EB", width=1, height=1).grid(row=0, column=c, sticky="nse")
             
             valores = [
                 fila["sum_d"], fila["sum_h"],
@@ -666,7 +712,7 @@ class BalanceComprobacionView(ctk.CTkFrame):
             col_idx = 1
             for val in valores:
                 txt = f"{val:,.2f}" if val > 0 else "-"
-                ctk.CTkLabel(f, text=txt, font=ctk.CTkFont(size=12), text_color="#4B5563", width=col_w, anchor="e").grid(row=0, column=col_idx, sticky="ew", padx=5)
+                ctk.CTkLabel(f, text=txt, font=ctk.CTkFont(size=11), text_color="#4B5563", width=col_w, anchor="e").grid(row=0, column=col_idx, sticky="ew", padx=5, pady=2)
                 col_idx += 1
                 
             row_idx += 1
@@ -685,13 +731,30 @@ class BalanceComprobacionView(ctk.CTkFrame):
         for i, val in enumerate(tot_vals):
             self.lbls_totales[i].configure(text=f"{val:,.2f}" if val > 0 else "-")
 
+    def exportar_pdf(self):
+        filepath = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], title="Guardar Hoja de Trabajo", initialfile="Hoja_de_Trabajo.pdf")
+        if not filepath: return
+        
+        filas, totales = logic.calcular_hoja_trabajo()
+        try:
+            export_pdf.exportar_hoja_trabajo_pdf(filepath, filas, totales)
+            messagebox.showinfo("Exportar", f"Hoja de Trabajo exportada con éxito a:\n{filepath}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo generar el PDF:\n{e}")
+
 class EstadosFinancierosView(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
         
-        ctk.CTkLabel(self, text="Centro de Reportes Financieros", font=ctk.CTkFont(family="Inter", size=26, weight="bold"), text_color="#111827").grid(row=0, column=0, pady=(20, 10), padx=30, sticky="w")
+        header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        header_frame.grid(row=0, column=0, sticky="ew", padx=30, pady=(20, 10))
+        header_frame.grid_columnconfigure(0, weight=1)
+        
+        ctk.CTkLabel(header_frame, text="Centro de Reportes Financieros", font=ctk.CTkFont(family="Inter", size=26, weight="bold"), text_color="#111827").grid(row=0, column=0, sticky="w")
+        btn_export = ctk.CTkButton(header_frame, text="Exportar a PDF", font=ctk.CTkFont(size=13, weight="bold"), fg_color="transparent", text_color="#10B981", hover_color="#ECFDF5", width=120, border_width=1, border_color="#D1D5DB", command=self.exportar_pdf)
+        btn_export.grid(row=0, column=1, sticky="e")
         
         self.tabview = ctk.CTkTabview(self, fg_color="#FFFFFF", border_width=1, border_color="#E5E7EB", segmented_button_selected_color="#10B981", segmented_button_selected_hover_color="#059669")
         self.tabview.grid(row=1, column=0, sticky="nsew", padx=30, pady=(0, 30))
@@ -792,7 +855,7 @@ class EstadosFinancierosView(ctk.CTkFrame):
         ctk.CTkFrame(self.frame_situacion, height=1, fg_color="#E5E7EB").pack(fill="x", padx=10, pady=5)
         self.add_row(self.frame_situacion, "Total Pasivos", tot_pasivos, is_total=True, indent=20)
         
-        self.add_row(self.frame_situacion, "PATRIMONIO", None, is_header=True)
+        self.add_row(self.frame_situacion, "CAPITAL", None, is_header=True)
         for s in capital:
             self.add_row(self.frame_situacion, f"{s['codigo']} - {s['nombre']}", s["saldo"], indent=20)
             
@@ -802,7 +865,7 @@ class EstadosFinancierosView(ctk.CTkFrame):
             
         tot_patrimonio = tot_capital + utilidad
         ctk.CTkFrame(self.frame_situacion, height=1, fg_color="#E5E7EB").pack(fill="x", padx=10, pady=5)
-        self.add_row(self.frame_situacion, "Total Patrimonio", tot_patrimonio, is_total=True, indent=20)
+        self.add_row(self.frame_situacion, "Total Capital", tot_patrimonio, is_total=True, indent=20)
         
         tot_pasivo_patrimonio = tot_pasivos + tot_patrimonio
         ctk.CTkFrame(self.frame_situacion, height=2, fg_color="#111827").pack(fill="x", padx=10, pady=(15, 5))
@@ -818,7 +881,98 @@ class EstadosFinancierosView(ctk.CTkFrame):
         f_igual2.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(f_igual2, text="TOTAL PASIVO + PATRIMONIO", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827").grid(row=0, column=0, sticky="w")
         ctk.CTkLabel(f_igual2, text=f"$ {tot_pasivo_patrimonio:,.2f}", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827", anchor="e", width=120).grid(row=0, column=2, sticky="e")
+
+    def exportar_pdf(self):
+        tab_actual = self.tabview.get()
+        if tab_actual == "Hoja de Trabajo":
+            self.hoja_trabajo_view.exportar_pdf()
+        elif tab_actual == "Estado de Resultados":
+            self.exportar_resultados()
+        elif tab_actual == "Balance General":
+            self.exportar_balance()
+            
+    def exportar_resultados(self):
+        filepath = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], title="Guardar Estado de Resultados", initialfile="Estado_de_Resultados.pdf")
+        if not filepath: return
         
+        saldos = logic.calcular_saldos_mayor()
+        ingresos = [s for s in saldos if s["tipo"] == "Ingreso" and s["saldo"] != 0]
+        egresos = [s for s in saldos if s["tipo"] == "Egreso" and s["saldo"] != 0]
+        
+        tot_ingresos = sum(s["saldo"] for s in ingresos)
+        tot_egresos = sum(s["saldo"] for s in egresos)
+        utilidad = tot_ingresos - tot_egresos
+        
+        datos = []
+        datos.append(["INGRESOS", "", True])
+        for s in ingresos:
+            datos.append([f"  {s['codigo']} - {s['nombre']}", f"{s['saldo']:,.2f}"])
+        datos.append(["Total Ingresos", f"{tot_ingresos:,.2f}", True])
+        
+        datos.append(["EGRESOS", "", True])
+        for s in egresos:
+            datos.append([f"  {s['codigo']} - {s['nombre']}", f"{s['saldo']:,.2f}"])
+        datos.append(["Total Egresos", f"{tot_egresos:,.2f}", True])
+        
+        lbl_res = "UTILIDAD NETA DEL EJERCICIO" if utilidad >= 0 else "PÉRDIDA NETA DEL EJERCICIO"
+        datos.append([lbl_res, f"{utilidad:,.2f}", True])
+        
+        try:
+            export_pdf.exportar_estados_financieros_pdf(filepath, "Estado de Resultados", datos)
+            messagebox.showinfo("Exportar", f"Estado de Resultados exportado con éxito a:\n{filepath}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo generar el PDF:\n{e}")
+
+    def exportar_balance(self):
+        filepath = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], title="Guardar Balance General", initialfile="Balance_General.pdf")
+        if not filepath: return
+        
+        saldos = logic.calcular_saldos_mayor()
+        activos = [s for s in saldos if s["tipo"] == "Activo" and s["saldo"] != 0]
+        pasivos = [s for s in saldos if s["tipo"] == "Pasivo" and s["saldo"] != 0]
+        capital = [s for s in saldos if s["tipo"] == "Capital" and s["saldo"] != 0]
+        
+        # Calcular utilidad neta
+        ingresos = [s for s in saldos if s["tipo"] == "Ingreso" and s["saldo"] != 0]
+        egresos = [s for s in saldos if s["tipo"] == "Egreso" and s["saldo"] != 0]
+        tot_ingresos = sum(s["saldo"] for s in ingresos)
+        tot_egresos = sum(s["saldo"] for s in egresos)
+        utilidad = tot_ingresos - tot_egresos
+        
+        tot_activos = sum(s["saldo"] for s in activos)
+        tot_pasivos = sum(s["saldo"] for s in pasivos)
+        tot_capital = sum(s["saldo"] for s in capital)
+        
+        datos = []
+        datos.append(["ACTIVO", "", True])
+        for s in activos:
+            datos.append([f"  {s['codigo']} - {s['nombre']}", f"{s['saldo']:,.2f}"])
+        datos.append(["Total Activos", f"{tot_activos:,.2f}", True])
+        
+        datos.append(["PASIVO", "", True])
+        for s in pasivos:
+            datos.append([f"  {s['codigo']} - {s['nombre']}", f"{s['saldo']:,.2f}"])
+        datos.append(["Total Pasivos", f"{tot_pasivos:,.2f}", True])
+        
+        datos.append(["CAPITAL", "", True])
+        for s in capital:
+            datos.append([f"  {s['codigo']} - {s['nombre']}", f"{s['saldo']:,.2f}"])
+            
+        if utilidad != 0:
+            lbl_util = "Utilidad del Ejercicio" if utilidad > 0 else "Pérdida del Ejercicio"
+            datos.append([f"  3.1.xx - {lbl_util}", f"{utilidad:,.2f}"])
+            
+        tot_patrimonio = tot_capital + utilidad
+        datos.append(["Total Capital", f"{tot_patrimonio:,.2f}", True])
+        
+        datos.append(["TOTAL PASIVO + PATRIMONIO", f"{tot_pasivos + tot_patrimonio:,.2f}", True])
+        
+        try:
+            export_pdf.exportar_estados_financieros_pdf(filepath, "Balance General", datos)
+            messagebox.showinfo("Exportar", f"Balance General exportado con éxito a:\n{filepath}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo generar el PDF:\n{e}")
+
 class CierreView(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")

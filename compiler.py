@@ -26,6 +26,19 @@ def main():
     print("\n2. Compilando aplicación con PyInstaller...")
     pyinstaller_path = os.path.join(".venv", "Scripts", "pyinstaller.exe")
     
+    # Convertir logo.png a logo.ico para usarlo como icono de la aplicación
+    logo_png_path = "logo.png"
+    logo_ico_path = "logo.ico"
+    if os.path.exists(logo_png_path):
+        print("Convirtiendo logo.png a logo.ico para el icono de la aplicación...")
+        from PIL import Image
+        try:
+            img = Image.open(logo_png_path)
+            img.save(logo_ico_path, format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+            print("¡Archivo logo.ico creado con éxito!")
+        except Exception as e:
+            print("Error al convertir el icono:", e)
+            
     # Eliminar carpetas previas para asegurar una compilación limpia
     for folder in ["build", "dist"]:
         if os.path.exists(folder):
@@ -38,7 +51,8 @@ def main():
     # --onedir: empaqueta en una sola carpeta distribuible (ideal para instaladores)
     # --windowed: oculta la ventana negra de consola al arrancar la app
     # --clean: limpia la caché de compilaciones previas para evitar reutilizar dependencias incompletas
-    # --add-data "logo.png;..": copia el archivo logo.png a la raíz del paquete compilado
+    # --add-data "logo.png;.": copia el archivo logo.png a la raíz del paquete compilado
+    # --icon: añade el icono logo.ico al ejecutable final
     build_cmd = [
         pyinstaller_path,
         "--name", "AuraBooks",
@@ -47,8 +61,11 @@ def main():
         "--windowed",
         "--clean",
         "--add-data", "logo.png;.",
-        "main.py"
     ]
+    if os.path.exists(logo_ico_path):
+        build_cmd.extend(["--icon", logo_ico_path])
+        
+    build_cmd.append("main.py")
     
     # Configurar las variables de entorno necesarias para la localización de Tcl/Tk y PythonHome
     # debido a la instalación fragmentada de Python 3.14 en el sistema.

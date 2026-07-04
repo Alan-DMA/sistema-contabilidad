@@ -8,6 +8,7 @@ AppPublisher=Alan DMA
 DefaultDirName={pf}\AuraBooks
 DefaultGroupName=AuraBooks
 UninstallDisplayIcon={app}\AuraBooks.exe
+SetupIconFile=logo.ico
 OutputDir=Output
 OutputBaseFilename=AuraBooks_Setup
 Compression=lzma2

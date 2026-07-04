@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Este archivo contiene las funciones para generar reportes en formato PDF de manera automática.
+# Diseña las tablas, tipografía y colores corporativos (Flat Design) de cada reporte contable exportado.
+
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -6,6 +9,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from datetime import datetime
 
 def _get_styles():
+    # Define la tipografía, tamaño y color de las letras para los títulos y subtítulos del reporte.
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         'TitleStyle',
@@ -28,6 +32,7 @@ def _get_styles():
     return title_style, subtitle_style
 
 def _crear_tabla(datos, col_widths=None):
+    # Dibuja y da formato visual a una tabla en el archivo PDF (agrega bordes grises y filas con colores alternados).
     t = Table(datos, colWidths=col_widths, repeatRows=1)
     
     style = TableStyle([
@@ -55,6 +60,7 @@ def _crear_tabla(datos, col_widths=None):
     return t
 
 def exportar_diario_pdf(filepath, datos):
+    # Genera un documento PDF vertical con la lista de asientos y transacciones registradas en el Libro Diario.
     doc = SimpleDocTemplate(filepath, pagesize=letter)
     title_style, sub_style = _get_styles()
     
@@ -85,6 +91,7 @@ def exportar_diario_pdf(filepath, datos):
 
 
 def exportar_mayor_pdf(filepath, cuenta_nombre, datos):
+    # Genera un documento PDF vertical con el historial detallado de movimientos de una única cuenta (Libro Mayor).
     doc = SimpleDocTemplate(filepath, pagesize=letter)
     title_style, sub_style = _get_styles()
     
@@ -115,6 +122,8 @@ def exportar_mayor_pdf(filepath, cuenta_nombre, datos):
 
 
 def exportar_hoja_trabajo_pdf(filepath, filas, totales):
+    # Genera una hoja de cálculo contable (Hoja de Trabajo) en PDF de formato horizontal (apaisado)
+    # debido a la gran cantidad de columnas (12 columnas de sumas, saldos y cuentas).
     # Usar landscape para hoja de trabajo porque tiene muchas columnas
     doc = SimpleDocTemplate(filepath, pagesize=landscape(letter))
     title_style, sub_style = _get_styles()
@@ -177,6 +186,8 @@ def exportar_hoja_trabajo_pdf(filepath, filas, totales):
 
 
 def exportar_estados_financieros_pdf(filepath, titulo, datos_tabla):
+    # Genera reportes financieros oficiales (como el Balance General o Estado de Resultados)
+    # en PDF, formateando con negritas y fondo gris las líneas de sumas totales.
     doc = SimpleDocTemplate(filepath, pagesize=letter)
     title_style, sub_style = _get_styles()
     

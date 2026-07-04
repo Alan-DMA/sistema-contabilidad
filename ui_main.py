@@ -1,24 +1,32 @@
 # -*- coding: utf-8 -*-
+# Este archivo contiene la ventana principal del sistema (el contenedor o marco general).
+# Diseña el menú lateral izquierdo (Sidebar) y controla el cambio entre las diferentes pantallas de la aplicación.
+
 import customtkinter as ctk
 from ui_views import LoginView, RegistroDiarioView, ReporteDiarioView, MayorView, BalanceComprobacionView, EstadosFinancierosView, CierreView, GestionCuentasView, DashboardView
 
 class SistemaContableGUI(ctk.CTk):
+    # Esta es la clase principal que abre y da estilo a la ventana principal de la aplicación.
     def __init__(self):
         super().__init__()
         
         self.title("AuraBooks v1.5")
         self.geometry("1200x800")
         
+        # Fijar modo de apariencia en Claro y configurar el fondo
         ctk.set_appearance_mode("light")
         self.configure(fg_color="#F8FAFC")
         
+        # Configurar la cuadrícula básica para que la ventana se estire fluidamente
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         
         self.usuario_actual = None
+        # Al abrir la aplicación por primera vez, mostrar la pantalla de Login
         self.mostrar_login()
         
     def mostrar_login(self):
+        # Limpia cualquier ventana/botón de la pantalla y dibuja el formulario de inicio de sesión.
         for widget in self.winfo_children():
             widget.destroy()
             
@@ -26,16 +34,19 @@ class SistemaContableGUI(ctk.CTk):
         self.login_view.grid(row=0, column=0, sticky="nsew")
         
     def iniciar_dashboard(self, usuario):
+        # Esta función se activa cuando el usuario inicia sesión correctamente.
+        # Dibuja la barra de menú lateral (Sidebar) y prepara el lienzo de trabajo a la derecha.
         self.usuario_actual = usuario
         
         for widget in self.winfo_children():
             widget.destroy()
             
+        # Reconfigurar cuadrícula: Columna 0 es para el Menú Lateral, Columna 1 es para el Contenido de la derecha
         self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=0) # Sidebar
-        self.grid_columnconfigure(1, weight=1) # Contenido
+        self.grid_columnconfigure(0, weight=0) # Sidebar fija
+        self.grid_columnconfigure(1, weight=1) # Contenido estirable
         
-        # ============ SIDEBAR ============
+        # ============ MENÚ LATERAL (SIDEBAR) ============
         self.sidebar = ctk.CTkFrame(self, width=264, fg_color="#FFFFFF", corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_propagate(False)

@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
+# Este archivo se encarga de gestionar la Base de Datos. Guarda y recupera toda la información
+# del sistema (usuarios, cuentas contables y asientos) en un archivo local llamado 'contabilidad.db'.
+
 import sqlite3
 import os
 
 DB_PATH = 'contabilidad.db'
 
 def get_connection():
+    # Conecta el programa con el archivo físico de la base de datos para poder guardar o leer información.
     return sqlite3.connect(DB_PATH)
 
 def init_db():
+    # Prepara el archivo de base de datos la primera vez que se abre el programa.
+    # Crea las "tablas" (como hojas de Excel) para almacenar Usuarios, Cuentas, Asientos Contables y sus detalles.
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -61,16 +67,25 @@ def init_db():
             ("1.1.02", "Bancos", "Activo"),
             ("1.1.03", "Cuentas por Cobrar", "Activo"),
             ("1.1.04", "Inventario", "Activo"),
+            ("1.1.05", "Mobiliario y Equipo", "Activo"),
+            ("1.1.06", "Equipos de Computación", "Activo"),
+            ("1.1.07", "Edificios", "Activo"),
             ("2.1.01", "Cuentas por Pagar", "Pasivo"),
             ("2.1.02", "Préstamos Bancarios", "Pasivo"),
+            ("2.1.03", "Documentos por Pagar", "Pasivo"),
+            ("2.1.04", "Impuestos por Pagar", "Pasivo"),
             ("3.1.01", "Capital Social", "Capital"),
             ("3.1.02", "Utilidad del Ejercicio", "Capital"),
             ("3.1.03", "Pérdida del Ejercicio", "Capital"),
+            ("3.1.04", "Reservas Legales", "Capital"),
             ("4.1.01", "Ingresos por Ventas", "Ingreso"),
             ("4.1.02", "Ingresos por Servicios", "Ingreso"),
+            ("4.1.03", "Ingresos Financieros", "Ingreso"),
             ("5.1.01", "Gastos de Alquiler", "Egreso"),
             ("5.1.02", "Gastos de Salarios", "Egreso"),
-            ("5.1.03", "Gastos de Servicios Básicos", "Egreso")
+            ("5.1.03", "Gastos de Servicios Básicos", "Egreso"),
+            ("5.1.04", "Gastos de Seguros", "Egreso"),
+            ("5.1.05", "Gastos de Publicidad", "Egreso")
         ]
         cursor.executemany("INSERT INTO cuentas (codigo, nombre, tipo) VALUES (?, ?, ?)", cuentas_base)
 
@@ -95,6 +110,8 @@ def get_cuentas():
     return cuentas
 
 def insertar_cuenta(codigo, nombre, tipo):
+    # Agrega una nueva cuenta contable al catálogo (por ejemplo: "1.1.08 Caja Chica" de tipo "Activo").
+    # Verifica primero que no exista ya otra cuenta registrada con el mismo código.
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -121,7 +138,8 @@ def get_fecha_ultimo_cierre():
     return resultado
 
 def insertar_asiento(fecha, descripcion, detalles):
-    # detalles es una lista de tuplas: (cuenta_id, debe, haber)
+    # Guarda un nuevo registro de transacción (asiento contable) en el libro diario.
+    # Guarda la cabecera (fecha y explicación) y cada una de las líneas con sus montos en el Debe o en el Haber.
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -143,7 +161,8 @@ def insertar_asiento(fecha, descripcion, detalles):
         conn.close()
 
 def get_saldos_cuentas():
-    # Retorna los saldos consolidados por cuenta basándose en todo el historial
+    # Suma todos los montos registrados en el Debe y el Haber de cada cuenta en toda la historia
+    # para saber cuánto dinero se ha movido en total en cada una de ellas.
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -161,6 +180,8 @@ def get_saldos_cuentas():
     return saldos
 
 def get_libro_diario():
+    # Recupera todos los asientos contables registrados con sus cuentas y montos,
+    # ordenados cronológicamente, para mostrarlos en el reporte del Libro Diario.
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -175,6 +196,8 @@ def get_libro_diario():
     return registros
 
 def autenticar_usuario(username, password):
+    # Compara el nombre de usuario y contraseña escritos en la pantalla de login con los guardados
+    # en la base de datos para dar acceso al programa si son correctos.
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, username, rol FROM usuarios WHERE username = ? AND password = ?", (username, password))
@@ -205,6 +228,8 @@ def get_asiento(asiento_id):
     }
 
 def get_movimientos_cuenta(cuenta_id):
+    # Obtiene todos los movimientos (entradas y salidas) de una cuenta específica ordenados por fecha,
+    # necesario para armar el reporte del Libro Mayor de esa cuenta.
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -219,6 +244,8 @@ def get_movimientos_cuenta(cuenta_id):
     return movimientos
 
 def get_dashboard_data():
+    # Obtiene los datos generales que se muestran en el panel de control inicial (Dashboard):
+    # Activos totales, ingresos, egresos, cuentas por cobrar y los 4 asientos más recientes.
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -292,3 +319,44 @@ def get_dashboard_data():
         "actividades": actividades,
         "num_asientos": num_asientos
     }
+
+def get_ultimo_anio_asiento():
+    # Obtiene el año más reciente registrado en los asientos contables para mostrar ese año por defecto en el Dashboard.
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT MAX(strftime('%Y', fecha)) FROM asientos")
+    res = cursor.fetchone()[0]
+    conn.close()
+    return int(res) if res else datetime.now().year
+
+def get_flujo_caja(anio):
+    # Obtiene la suma mensual de todos los Ingresos (Haber) y Egresos (Debe) para el año especificado,
+    # estructurando la información mes a mes (de enero a diciembre) para pintar el gráfico de flujo de caja.
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT strftime('%m', a.fecha) as mes,
+               SUM(CASE WHEN c.tipo = 'Ingreso' THEN d.haber - d.debe ELSE 0 END) as ingresos,
+               SUM(CASE WHEN c.tipo = 'Egreso' THEN d.debe - d.haber ELSE 0 END) as egresos
+        FROM detalle_asientos d
+        JOIN asientos a ON d.asiento_id = a.id
+        JOIN cuentas c ON d.cuenta_id = c.id
+        WHERE strftime('%Y', a.fecha) = ?
+        GROUP BY mes
+        ORDER BY mes
+    ''', (str(anio),))
+    
+    resultados = cursor.fetchall()
+    conn.close()
+    
+    # Crear estructura vacía para los 12 meses del año
+    flujo = {f"{i:02d}": {"ingresos": 0.0, "egresos": 0.0} for i in range(1, 13)}
+    for r in resultados:
+        mes, ing, egr = r
+        flujo[mes] = {
+            "ingresos": max(0.0, float(ing or 0.0)),
+            "egresos": max(0.0, float(egr or 0.0))
+        }
+    return flujo
+

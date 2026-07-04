@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
+# Este archivo contiene la "Lógica de Negocio". Aquí se realizan los cálculos matemáticos,
+# validaciones contables y los cierres de ejercicio para asegurar que se respeten las reglas de la contabilidad.
+
 from datetime import datetime
 import database
 
 def validar_equilibrio(detalles):
-    """
-    Valida la regla de oro de la partida doble.
-    detalles: lista de tuplas (cuenta_id, debe, haber)
-    """
-    suma_debe = round(sum(float(d[1]) for d in detalles), 2) #esta linea compara la suma del debe con la suma del haber
+    # Regla de Oro Contable: Valida que la suma de todos los montos en el Debe sea
+    # exactamente igual a la suma de todos los montos en el Haber en un asiento (Partida Doble).
+    suma_debe = round(sum(float(d[1]) for d in detalles), 2)
     suma_haber = round(sum(float(d[2]) for d in detalles), 2)
     return suma_debe == suma_haber
 
 def validar_fecha_asiento(fecha_str):
-    """
-    Valida que la fecha del asiento no sea menor o igual al último cierre (Bloqueo de período).
-    Retorna (es_valida, mensaje)
-    """
+    # Valida que la fecha del asiento no corresponda a un periodo que ya ha sido cerrado.
+    # Si el periodo contable ya se cerró, impide registrar nuevos movimientos en esa fecha.
     ultimo_cierre_str = database.get_fecha_ultimo_cierre()
     if not ultimo_cierre_str:
         return True, ""
@@ -28,9 +27,8 @@ def validar_fecha_asiento(fecha_str):
     return True, ""
 
 def calcular_saldos_mayor():
-    """
-    Devuelve una lista de cuentas con su saldo neto y si es Deudor o Acreedor.
-    """
+    # Indica el saldo neto total de cada cuenta y si aumenta por el Debe o por el Haber.
+    # Resta Debe menos Haber para cuentas de Activo/Egreso, y Haber menos Debe para Pasivo/Capital/Ingreso.
     datos = database.get_saldos_cuentas()
     resultados = []
     for row in datos:
@@ -57,10 +55,8 @@ def calcular_saldos_mayor():
     return resultados
 
 def ejecutar_cierre_contable(fecha_cierre):
-    """
-    Consolida cuentas de Ingreso y Egreso, y calcula la utilidad.
-    Genera el asiento de cierre contra Capital Social.
-    """
+    # Proceso de Cierre de Ejercicio: Toma todas las cuentas de Ingresos y Egresos (cuentas nominales)
+    # y traslada la utilidad o pérdida calculada a la cuenta patrimonial de Capital Social, saldando y bloqueando el periodo.
     valido, msg = validar_fecha_asiento(fecha_cierre)
     if not valido:
         return False, msg
@@ -116,9 +112,8 @@ def ejecutar_cierre_contable(fecha_cierre):
     return exito, msg
 
 def reversar_asiento(asiento_id, fecha_reverso, descripcion_reverso):
-    """
-    Anula un asiento invirtiendo las cuentas (Haber por Debe y Debe por Haber).
-    """
+    # Reverso Contable (Anulación): Crea una transacción que invierte los montos (el Debe pasa al Haber
+    # y el Haber al Debe) del asiento original seleccionado para anular su efecto financiero sin borrar la auditoría.
     valido, msg = validar_fecha_asiento(fecha_reverso)
     if not valido:
         return False, msg
@@ -140,6 +135,8 @@ def reversar_asiento(asiento_id, fecha_reverso, descripcion_reverso):
     return exito, msg
 
 def calcular_movimientos_mayor(cuenta_id):
+    # Calcula la columna de "Saldo Acumulado" línea por línea para los movimientos de una cuenta específica,
+    # sumando o restando según el tipo de cuenta (si aumenta por el debe o por el haber).
     cuentas = database.get_cuentas()
     cuenta_obj = next((c for c in cuentas if c[0] == cuenta_id), None)
     if not cuenta_obj: return []
@@ -168,6 +165,8 @@ def calcular_movimientos_mayor(cuenta_id):
     return resultado
 
 def calcular_hoja_trabajo():
+    # Genera la Hoja de Trabajo de 12 columnas: una matriz analítica que clasifica y suma
+    # los movimientos en Sumas, Saldos, Ajustes, Saldos Ajustados, Resultados y Balance General.
     saldos = database.get_saldos_cuentas()
     filas = []
     totales = {

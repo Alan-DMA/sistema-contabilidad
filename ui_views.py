@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Este archivo contiene los diseños y el comportamiento visual de cada una de las pantallas
+# individuales del sistema contable (Login, Registro Diario, Libros Diario y Mayor, Reportes, Cuentas y Cierre).
+
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from datetime import datetime
@@ -7,6 +10,8 @@ import logic
 import export_pdf
 
 class LoginView(ctk.CTkFrame):
+    # Pantalla de Login: Muestra el formulario para escribir correo y contraseña
+    # y valida las credenciales del usuario para permitir el ingreso.
     def __init__(self, master, on_login_success):
         super().__init__(master, fg_color="#F8FAFC")
         self.on_login_success = on_login_success
@@ -92,6 +97,8 @@ class LoginView(ctk.CTkFrame):
             messagebox.showerror("Error", "Credenciales incorrectas")
 
 class RegistroDiarioView(ctk.CTkFrame):
+    # Pantalla de Nuevo Asiento: Formulario con filas dinámicas para que el usuario ingrese
+    # la fecha, concepto y los montos en el Debe y el Haber para registrar una nueva transacción.
     def __init__(self, master):
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
@@ -178,12 +185,19 @@ class RegistroDiarioView(ctk.CTkFrame):
         self.cuentas = [f"{c[1]} {c[2]}" for c in datos_cuentas]
         self.cuentas_dict = {f"{c[1]} {c[2]}": c[0] for c in datos_cuentas}
         
-        for l in self.lineas:
-            l["frame"].destroy()
-        self.lineas.clear()
-        
-        self.agregar_linea()
-        self.agregar_linea()
+        # Si ya hay líneas existentes, actualizamos sus comboboxes con las nuevas cuentas
+        # sin borrar el contenido que el usuario ya haya ingresado.
+        if self.lineas:
+            for l in self.lineas:
+                current_val = l["combo"].get()
+                l["combo"].configure(values=self.cuentas)
+                if current_val in self.cuentas:
+                    l["combo"].set(current_val)
+                elif self.cuentas:
+                    l["combo"].set(self.cuentas[0])
+        else:
+            self.agregar_linea()
+            self.agregar_linea()
         
     def agregar_linea(self):
         row_idx = len(self.lineas)
@@ -276,6 +290,8 @@ class RegistroDiarioView(ctk.CTkFrame):
             messagebox.showerror("Error", msg)
 
 class ReporteDiarioView(ctk.CTkFrame):
+    # Pantalla del Libro Diario: Muestra el listado cronológico de todas las transacciones
+    # asentadas en el sistema, agrupadas por su número de asiento contable.
     def __init__(self, master):
         super().__init__(master, fg_color="transparent")
         self.grid_columnconfigure(0, weight=1)
@@ -413,6 +429,8 @@ class ReporteDiarioView(ctk.CTkFrame):
             messagebox.showerror("Error", f"No se pudo generar el PDF:\\n{e}")
 
 class MayorView(ctk.CTkFrame):
+    # Pantalla del Libro Mayor: Permite seleccionar una cuenta contable específica
+    # para ver detalladamente cada uno de sus movimientos históricos y su saldo acumulado.
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
         
@@ -506,7 +524,13 @@ class MayorView(ctk.CTkFrame):
         self.cuentas = database.get_cuentas()
         opciones = [f"{c[1]} - {c[2]}" for c in self.cuentas]
         self.combo_cuenta.configure(values=opciones)
-        if opciones:
+        
+        # Mantener la selección anterior si aún existe en el catálogo actualizado
+        current_selection = self.combo_cuenta.get()
+        if current_selection in opciones:
+            self.combo_cuenta.set(current_selection)
+            self.on_cuenta_select(current_selection)
+        elif opciones:
             self.combo_cuenta.set(opciones[0])
             self.on_cuenta_select(opciones[0])
             
@@ -596,6 +620,8 @@ class MayorView(ctk.CTkFrame):
             messagebox.showerror("Error", f"No se pudo generar el PDF:\n{e}")
 
 class BalanceComprobacionView(ctk.CTkFrame):
+    # Pantalla de Hoja de Trabajo: Presenta una tabla analítica detallada de 12 columnas
+    # con sumas, saldos y agrupaciones para control financiero.
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
         self.grid_rowconfigure(2, weight=1)
@@ -743,6 +769,8 @@ class BalanceComprobacionView(ctk.CTkFrame):
             messagebox.showerror("Error", f"No se pudo generar el PDF:\n{e}")
 
 class EstadosFinancierosView(ctk.CTkFrame):
+    # Pantalla del Centro de Reportes: Contiene pestañas para navegar entre la Hoja de Trabajo,
+    # el Estado de Resultados (ingresos y gastos) y el Balance General (activos, pasivos y capital).
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
         self.grid_rowconfigure(1, weight=1)
@@ -974,6 +1002,8 @@ class EstadosFinancierosView(ctk.CTkFrame):
             messagebox.showerror("Error", f"No se pudo generar el PDF:\n{e}")
 
 class CierreView(ctk.CTkFrame):
+    # Pantalla de Cierre Contable: Muestra una advertencia sobre la irreversibilidad del cierre
+    # y proporciona el botón para consolidar las cuentas nominales y bloquear el periodo contable.
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
         self.grid_rowconfigure(0, weight=1)
@@ -1017,6 +1047,8 @@ class CierreView(ctk.CTkFrame):
                 messagebox.showerror("Fallo en el Cierre", msg)
 
 class GestionCuentasView(ctk.CTkFrame):
+    # Pantalla del Catálogo de Cuentas: Permite crear nuevas cuentas contables ingresando su código,
+    # nombre y tipo, y muestra el catálogo completo actual en una lista a la derecha.
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
         self.grid_rowconfigure(1, weight=1)
@@ -1113,6 +1145,8 @@ class GestionCuentasView(ctk.CTkFrame):
             ctk.CTkLabel(f, text=c[3], font=ctk.CTkFont(size=13), text_color="#4B5563", width=100, anchor="w").grid(row=0, column=2, padx=(10, 20), pady=5)
 
 class DashboardView(ctk.CTkScrollableFrame):
+    # Pantalla del Panel de Control (Dashboard): Presenta un resumen rápido con tarjetas de KPI
+    # (balances, ingresos, egresos), un gráfico del flujo de caja, actividades recientes y alertas del sistema.
     def __init__(self, master):
         super().__init__(master, fg_color="#F8FAFC")
         self.grid_columnconfigure(0, weight=1)
@@ -1157,7 +1191,8 @@ class DashboardView(ctk.CTkScrollableFrame):
         
         header_f = ctk.CTkFrame(chart_card, fg_color="transparent")
         header_f.pack(fill="x", padx=20, pady=15)
-        ctk.CTkLabel(header_f, text="Flujo de Caja (Octubre)", font=ctk.CTkFont(size=18, weight="bold"), text_color="#111827").pack(side="left")
+        self.lbl_chart_title = ctk.CTkLabel(header_f, text="Flujo de Caja", font=ctk.CTkFont(size=18, weight="bold"), text_color="#111827")
+        self.lbl_chart_title.pack(side="left")
         
         legend_f = ctk.CTkFrame(header_f, fg_color="transparent")
         legend_f.pack(side="right")
@@ -1165,18 +1200,15 @@ class DashboardView(ctk.CTkScrollableFrame):
         ctk.CTkFrame(legend_f, fg_color="#10B981", width=12, height=12, corner_radius=2).pack(side="left", padx=(0, 5))
         ctk.CTkLabel(legend_f, text="Ingresos", font=ctk.CTkFont(size=12), text_color="#6B7280").pack(side="left", padx=(0, 15))
         
-        ctk.CTkFrame(legend_f, fg_color="#4B5563", width=12, height=12, corner_radius=2).pack(side="left", padx=(0, 5))
+        ctk.CTkFrame(legend_f, fg_color="#9CA3AF", width=12, height=12, corner_radius=2).pack(side="left", padx=(0, 5))
         ctk.CTkLabel(legend_f, text="Egresos", font=ctk.CTkFont(size=12), text_color="#6B7280").pack(side="left")
         
         import tkinter as tk
-        canvas = tk.Canvas(chart_card, bg="#FFFFFF", highlightthickness=0, height=220)
-        canvas.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        self.canvas = tk.Canvas(chart_card, bg="#FFFFFF", highlightthickness=0, height=220)
+        self.canvas.pack(fill="both", expand=True, padx=20, pady=(0, 20))
         
-        for y in (50, 100, 150, 200):
-            canvas.create_line(0, y, 1200, y, fill="#F3F4F6", dash=(4, 4))
-            
-        canvas.create_polygon(0, 220, 0, 180, 200, 190, 400, 160, 600, 140, 800, 100, 1000, 120, 1200, 80, 1200, 220, fill="#ECFDF5", outline="")
-        canvas.create_polygon(0, 220, 0, 200, 300, 180, 600, 190, 900, 160, 1200, 140, 1200, 220, fill="#D1FAE5", outline="")
+        # Enlazar evento para redibujar el gráfico si la ventana cambia de tamaño (diseño responsivo)
+        self.canvas.bind("<Configure>", self.on_canvas_configure)
         
         # --- BOTTOM SECTION ---
         bottom_f = ctk.CTkFrame(self, fg_color="transparent")
@@ -1192,6 +1224,92 @@ class DashboardView(ctk.CTkScrollableFrame):
         self.alert_card.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         self.alert_card.grid_columnconfigure(0, weight=1)
 
+    def on_canvas_configure(self, event):
+        # Redibuja el gráfico de flujo de caja cuando la ventana cambia de tamaño
+        # para que se adapte perfectamente al espacio disponible (diseño responsivo).
+        if hasattr(self, 'datos_flujo') and self.datos_flujo:
+            self.dibujar_grafico()
+
+    def dibujar_grafico(self):
+        # Dibuja dinámicamente las líneas y áreas de ingresos/egresos mensuales
+        # calculados de la base de datos real.
+        self.canvas.delete("all")
+        
+        W = self.canvas.winfo_width()
+        H = self.canvas.winfo_height()
+        if W <= 1 or H <= 1:
+            W = 900
+            H = 220
+            
+        padding_left = 65
+        padding_right = 20
+        padding_top = 20
+        padding_bottom = 30
+        
+        h_draw = H - padding_top - padding_bottom
+        w_draw = W - padding_left - padding_right
+        
+        # Calcular el máximo valor para el eje Y
+        valores_y = []
+        for mes_str in [f"{i:02d}" for i in range(1, 13)]:
+            valores_y.append(self.datos_flujo[mes_str]["ingresos"])
+            valores_y.append(self.datos_flujo[mes_str]["egresos"])
+            
+        max_val = max(valores_y) if valores_y else 0.0
+        if max_val == 0:
+            max_val = 1000.0
+            
+        limit_y = max_val * 1.15
+        
+        # Dibujar líneas de cuadrícula y etiquetas de monto (Eje Y)
+        for pct in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            val = pct * limit_y
+            y_pos = padding_top + h_draw - (pct * h_draw)
+            self.canvas.create_line(padding_left, y_pos, W - padding_right, y_pos, fill="#F3F4F6", dash=(4, 4))
+            self.canvas.create_text(padding_left - 10, y_pos, text=f"${val:,.0f}", anchor="e", font=("Helvetica", 9), fill="#6B7280")
+            
+        # Nombres de los meses (Eje X)
+        meses_nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+        
+        # Puntos de Egresos (Área y Línea)
+        puntos_egresos = [padding_left, padding_top + h_draw]
+        for i in range(12):
+            mes_str = f"{i+1:02d}"
+            val = self.datos_flujo[mes_str]["egresos"]
+            x = padding_left + (i * w_draw / 11)
+            y = padding_top + h_draw - (val / limit_y * h_draw)
+            puntos_egresos.extend([x, y])
+        puntos_egresos.extend([W - padding_right, padding_top + h_draw])
+        
+        # Puntos de Ingresos (Área y Línea)
+        puntos_ingresos = [padding_left, padding_top + h_draw]
+        for i in range(12):
+            mes_str = f"{i+1:02d}"
+            val = self.datos_flujo[mes_str]["ingresos"]
+            x = padding_left + (i * w_draw / 11)
+            y = padding_top + h_draw - (val / limit_y * h_draw)
+            puntos_ingresos.extend([x, y])
+        puntos_ingresos.extend([W - padding_right, padding_top + h_draw])
+        
+        # Dibujar áreas de fondo
+        self.canvas.create_polygon(puntos_egresos, fill="#F9FAFB", outline="")
+        self.canvas.create_polygon(puntos_ingresos, fill="#ECFDF5", outline="")
+        
+        # Dibujar líneas de contorno suavizadas (Bezier)
+        if len(puntos_egresos) >= 6:
+            line_egresos = puntos_egresos[2:-2]
+            self.canvas.create_line(line_egresos, fill="#9CA3AF", width=2, smooth=True)
+            
+        if len(puntos_ingresos) >= 6:
+            line_ingresos = puntos_ingresos[2:-2]
+            self.canvas.create_line(line_ingresos, fill="#10B981", width=2, smooth=True)
+            
+        # Dibujar marcas y textos del eje X
+        for i in range(12):
+            x = padding_left + (i * w_draw / 11)
+            self.canvas.create_line(x, padding_top + h_draw, x, padding_top + h_draw + 5, fill="#E5E7EB")
+            self.canvas.create_text(x, padding_top + h_draw + 15, text=meses_nombres[i], font=("Helvetica", 9), fill="#6B7280")
+
     def actualizar_datos(self):
         data = database.get_dashboard_data()
         
@@ -1199,6 +1317,12 @@ class DashboardView(ctk.CTkScrollableFrame):
         self.lbl_ingresos.configure(text=data["ingresos"])
         self.lbl_egresos.configure(text=data["egresos"])
         self.lbl_cobrar.configure(text=data["cuentas_cobrar"])
+        
+        # Obtener y actualizar los datos reales para el gráfico del flujo de caja
+        anio = database.get_ultimo_anio_asiento()
+        self.datos_flujo = database.get_flujo_caja(anio)
+        self.lbl_chart_title.configure(text=f"Flujo de Caja ({anio})")
+        self.dibujar_grafico()
         
         for w in self.act_card.winfo_children(): w.destroy()
         

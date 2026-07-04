@@ -26,11 +26,18 @@ def main():
     print("\n2. Compilando aplicación con PyInstaller...")
     pyinstaller_path = os.path.join(".venv", "Scripts", "pyinstaller.exe")
     
+    # Eliminar carpetas previas para asegurar una compilación limpia
+    for folder in ["build", "dist"]:
+        if os.path.exists(folder):
+            print(f"Limpiando carpeta de compilación previa: {folder}")
+            shutil.rmtree(folder, ignore_errors=True)
+
     # Comando de PyInstaller:
     # --name AuraBooks: nombre del ejecutable
     # --noconfirm: sobrescribe archivos existentes sin preguntar
     # --onedir: empaqueta en una sola carpeta distribuible (ideal para instaladores)
     # --windowed: oculta la ventana negra de consola al arrancar la app
+    # --clean: limpia la caché de compilaciones previas para evitar reutilizar dependencias incompletas
     # --add-data "logo.png;..": copia el archivo logo.png a la raíz del paquete compilado
     build_cmd = [
         pyinstaller_path,
@@ -38,6 +45,7 @@ def main():
         "--noconfirm",
         "--onedir",
         "--windowed",
+        "--clean",
         "--add-data", "logo.png;.",
         "main.py"
     ]

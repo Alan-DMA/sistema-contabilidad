@@ -316,7 +316,7 @@ def get_dashboard_data():
             "fecha": fecha,
             "descripcion": desc,
             "categoria": "OPERACIÓN",
-            "monto_str": f"{sign}${monto:,.2f}"
+            "monto_str": f"{sign}Bs. {monto:,.2f}"
         })
         
     # Check for alerts
@@ -326,10 +326,10 @@ def get_dashboard_data():
     conn.close()
     
     return {
-        "balance_total": f"${total_activos:,.2f}",
-        "ingresos": f"${total_ingresos:,.2f}",
-        "egresos": f"${total_egresos:,.2f}",
-        "cuentas_cobrar": f"${cuentas_cobrar:,.2f}",
+        "balance_total": f"Bs. {total_activos:,.2f}",
+        "ingresos": f"Bs. {total_ingresos:,.2f}",
+        "egresos": f"Bs. {total_egresos:,.2f}",
+        "cuentas_cobrar": f"Bs. {cuentas_cobrar:,.2f}",
         "actividades": actividades,
         "num_asientos": num_asientos
     }

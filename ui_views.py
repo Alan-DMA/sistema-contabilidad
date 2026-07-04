@@ -354,8 +354,8 @@ class ReporteDiarioView(ctk.CTkFrame):
         ctk.CTkLabel(h, text="Fecha", font=ctk.CTkFont(size=13, weight="bold"), text_color="#6B7280", width=100, anchor="w").grid(row=0, column=0, padx=10, pady=10)
         ctk.CTkLabel(h, text="Código", font=ctk.CTkFont(size=13, weight="bold"), text_color="#6B7280", width=80, anchor="w").grid(row=0, column=1, padx=10, pady=10)
         ctk.CTkLabel(h, text="Cuenta / Concepto", font=ctk.CTkFont(size=13, weight="bold"), text_color="#6B7280", anchor="w").grid(row=0, column=2, sticky="ew", padx=10, pady=10)
-        ctk.CTkLabel(h, text="Debe ($)", font=ctk.CTkFont(size=13, weight="bold"), text_color="#6B7280", width=100, anchor="e").grid(row=0, column=3, padx=10, pady=10)
-        ctk.CTkLabel(h, text="Haber ($)", font=ctk.CTkFont(size=13, weight="bold"), text_color="#6B7280", width=100, anchor="e").grid(row=0, column=4, padx=10, pady=10)
+        ctk.CTkLabel(h, text="Debe (Bs.)", font=ctk.CTkFont(size=13, weight="bold"), text_color="#6B7280", width=100, anchor="e").grid(row=0, column=3, padx=10, pady=10)
+        ctk.CTkLabel(h, text="Haber (Bs.)", font=ctk.CTkFont(size=13, weight="bold"), text_color="#6B7280", width=100, anchor="e").grid(row=0, column=4, padx=10, pady=10)
         
         self.scroll = ctk.CTkScrollableFrame(self.card, fg_color="transparent")
         self.scroll.grid(row=1, column=0, sticky="nsew")
@@ -486,7 +486,7 @@ class MayorView(ctk.CTkFrame):
         saldo_frame = ctk.CTkFrame(self.resumen_card, fg_color="transparent")
         saldo_frame.grid(row=0, column=2, sticky="e", padx=20)
         ctk.CTkLabel(saldo_frame, text="SALDO ACTUAL", font=ctk.CTkFont(size=11, weight="bold"), text_color="#6B7280").pack(anchor="e")
-        self.lbl_saldo_actual = ctk.CTkLabel(saldo_frame, text="$ 0.00", font=ctk.CTkFont(family="Inter", size=35, weight="bold"), text_color="#10B981")
+        self.lbl_saldo_actual = ctk.CTkLabel(saldo_frame, text="Bs. 0.00", font=ctk.CTkFont(family="Inter", size=35, weight="bold"), text_color="#10B981")
         self.lbl_saldo_actual.pack(anchor="e")
         
         # Tarjeta de Movimientos
@@ -599,7 +599,7 @@ class MayorView(ctk.CTkFrame):
         self.lbl_total_saldo.configure(text=f"{saldo_final:,.2f}")
         
         color_saldo = "#10B981" if saldo_final >= 0 else "#EF4444"
-        self.lbl_saldo_actual.configure(text=f"$ {saldo_final:,.2f}", text_color=color_saldo)
+        self.lbl_saldo_actual.configure(text=f"Bs. {saldo_final:,.2f}", text_color=color_saldo)
 
 
         self.lbl_total_saldo.configure(text=f"{saldo_final:,.2f}")
@@ -830,7 +830,7 @@ class EstadosFinancierosView(ctk.CTkFrame):
         
         ctk.CTkLabel(f, text=text, font=ctk.CTkFont(family="Inter", size=14, weight=font_w), text_color=text_c, anchor="w").grid(row=0, column=0, sticky="w", padx=(indent, 10))
         if amount is not None:
-            amt_str = f"$ {amount:,.2f}"
+            amt_str = f"Bs. {amount:,.2f}"
             ctk.CTkLabel(f, text=amt_str, font=ctk.CTkFont(family="Inter", size=14, weight=font_w), text_color=text_c, anchor="e", width=120).grid(row=0, column=2, sticky="e")
 
     def actualizar_datos(self):
@@ -914,13 +914,13 @@ class EstadosFinancierosView(ctk.CTkFrame):
         f_igual.pack(fill="x", padx=10, pady=2)
         f_igual.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(f_igual, text="TOTAL ACTIVO", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827").grid(row=0, column=0, sticky="w")
-        ctk.CTkLabel(f_igual, text=f"$ {tot_activos:,.2f}", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827", anchor="e", width=120).grid(row=0, column=2, sticky="e")
+        ctk.CTkLabel(f_igual, text=f"Bs. {tot_activos:,.2f}", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827", anchor="e", width=120).grid(row=0, column=2, sticky="e")
         
         f_igual2 = ctk.CTkFrame(self.frame_situacion, fg_color="transparent")
         f_igual2.pack(fill="x", padx=10, pady=2)
         f_igual2.grid_columnconfigure(1, weight=1)
         ctk.CTkLabel(f_igual2, text="TOTAL PASIVO + PATRIMONIO", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827").grid(row=0, column=0, sticky="w")
-        ctk.CTkLabel(f_igual2, text=f"$ {tot_pasivo_patrimonio:,.2f}", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827", anchor="e", width=120).grid(row=0, column=2, sticky="e")
+        ctk.CTkLabel(f_igual2, text=f"Bs. {tot_pasivo_patrimonio:,.2f}", font=ctk.CTkFont(family="Inter", size=14, weight="bold"), text_color="#111827", anchor="e", width=120).grid(row=0, column=2, sticky="e")
 
     def exportar_pdf(self):
         tab_actual = self.tabview.get()
@@ -1191,10 +1191,10 @@ class DashboardView(ctk.CTkScrollableFrame):
                 ctk.CTkFrame(card, fg_color="transparent", height=15).pack(fill="x")
             return val_lbl
                 
-        self.lbl_balance = create_kpi_card(kpis_frame, 0, "Balance Total", "$0.00", "🏛", "#10B981", "#D1FAE5", "↗ +4.2% mes ant.", "#10B981")
-        self.lbl_ingresos = create_kpi_card(kpis_frame, 1, "Ingresos del Mes", "$0.00", "↓", "#10B981", "#D1FAE5")
-        self.lbl_egresos = create_kpi_card(kpis_frame, 2, "Egresos del Mes", "$0.00", "↑", "#6B7280", "#E5E7EB")
-        self.lbl_cobrar = create_kpi_card(kpis_frame, 3, "Cuentas por Cobrar", "$0.00", "📄", "#6B7280", "#E5E7EB")
+        self.lbl_balance = create_kpi_card(kpis_frame, 0, "Balance Total", "Bs. 0.00", "🏛", "#10B981", "#D1FAE5", "↗ +4.2% mes ant.", "#10B981")
+        self.lbl_ingresos = create_kpi_card(kpis_frame, 1, "Ingresos del Mes", "Bs. 0.00", "↓", "#10B981", "#D1FAE5")
+        self.lbl_egresos = create_kpi_card(kpis_frame, 2, "Egresos del Mes", "Bs. 0.00", "↑", "#6B7280", "#E5E7EB")
+        self.lbl_cobrar = create_kpi_card(kpis_frame, 3, "Cuentas por Cobrar", "Bs. 0.00", "📄", "#6B7280", "#E5E7EB")
         
         # --- CHART ---
         chart_card = ctk.CTkFrame(self, fg_color="#FFFFFF", corner_radius=8, border_width=1, border_color="#E5E7EB", height=300)
@@ -1278,7 +1278,7 @@ class DashboardView(ctk.CTkScrollableFrame):
             val = pct * limit_y
             y_pos = padding_top + h_draw - (pct * h_draw)
             self.canvas.create_line(padding_left, y_pos, W - padding_right, y_pos, fill="#F3F4F6", dash=(4, 4))
-            self.canvas.create_text(padding_left - 10, y_pos, text=f"${val:,.0f}", anchor="e", font=("Helvetica", 9), fill="#6B7280")
+            self.canvas.create_text(padding_left - 10, y_pos, text=f"Bs. {val:,.0f}", anchor="e", font=("Helvetica", 9), fill="#6B7280")
             
         # Nombres de los meses (Eje X)
         meses_nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]

@@ -2,8 +2,20 @@
 # Este archivo contiene la ventana principal del sistema (el contenedor o marco general).
 # Diseña el menú lateral izquierdo (Sidebar) y controla el cambio entre las diferentes pantallas de la aplicación.
 
+import os
+import sys
 import customtkinter as ctk
 from ui_views import LoginView, RegistroDiarioView, ReporteDiarioView, MayorView, BalanceComprobacionView, EstadosFinancierosView, CierreView, GestionCuentasView, DashboardView
+
+def obtener_ruta_recurso(nombre_recurso):
+    # Resuelve la ruta física de un recurso (como logo.png).
+    # Si corre empaquetado, busca en la carpeta temporal de PyInstaller (sys._MEIPASS).
+    # Si corre en desarrollo, busca en el directorio actual.
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, nombre_recurso)
 
 class SistemaContableGUI(ctk.CTk):
     # Esta es la clase principal que abre y da estilo a la ventana principal de la aplicación.
@@ -56,8 +68,7 @@ class SistemaContableGUI(ctk.CTk):
         self.header_f = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.header_f.grid(row=0, column=0, padx=20, pady=(30, 0), sticky="ew")
         
-        import os
-        logo_path = "logo.png"
+        logo_path = obtener_ruta_recurso("logo.png")
         img_ctk = None
         if os.path.exists(logo_path):
             try:

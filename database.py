@@ -4,8 +4,22 @@
 
 import sqlite3
 import os
+import sys
 
-DB_PATH = 'contabilidad.db'
+def get_db_path():
+    # Si la aplicación se ejecuta compilada como un ejecutable (.exe),
+    # guardamos la base de datos en la carpeta Local AppData del usuario
+    # para evitar problemas de permisos de escritura (ej. al estar en Archivos de Programa)
+    if getattr(sys, 'frozen', False):
+        app_data_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'AuraBooks')
+        if not os.path.exists(app_data_dir):
+            os.makedirs(app_data_dir)
+        return os.path.join(app_data_dir, 'contabilidad.db')
+    else:
+        # En desarrollo local, guardamos directamente en la carpeta raíz del proyecto
+        return 'contabilidad.db'
+
+DB_PATH = get_db_path()
 
 def get_connection():
     # Conecta el programa con el archivo físico de la base de datos para poder guardar o leer información.

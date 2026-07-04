@@ -5,9 +5,21 @@
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from datetime import datetime
+import os
+import sys
 import database
 import logic
 import export_pdf
+
+def obtener_ruta_recurso(nombre_recurso):
+    # Resuelve la ruta física de un recurso (como logo.png).
+    # Si corre empaquetado, busca en la carpeta temporal de PyInstaller (sys._MEIPASS).
+    # Si corre en desarrollo, busca en el directorio actual.
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, nombre_recurso)
 
 class LoginView(ctk.CTkFrame):
     # Pantalla de Login: Muestra el formulario para escribir correo y contraseña
@@ -26,12 +38,12 @@ class LoginView(ctk.CTkFrame):
         # Centrar contenido en la tarjeta
         card.grid_columnconfigure(0, weight=1)
         
-        import os
+        logo_path = obtener_ruta_recurso("logo.png")
         img_ctk = None
-        if os.path.exists("logo.png"):
+        if os.path.exists(logo_path):
             try:
                 from PIL import Image, ImageDraw
-                img = Image.open("logo.png").convert("RGBA")
+                img = Image.open(logo_path).convert("RGBA")
                 size = min(img.size)
                 img = img.crop(((img.width - size) // 2, (img.height - size) // 2, (img.width + size) // 2, (img.height + size) // 2))
                 img = img.resize((140, 140), Image.Resampling.LANCZOS)
